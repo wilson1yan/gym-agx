@@ -2,6 +2,10 @@ import os
 import sys
 import agx
 import logging
+import random
+
+import agxIO
+import agxSDK
 import numpy as np
 
 from gym_agx.envs import dlo_env
@@ -10,7 +14,9 @@ from gym_agx.rl.reward import RewardConfig
 from gym_agx.utils.agx_classes import CameraConfig
 from gym_agx.rl.end_effector import EndEffector, EndEffectorConstraint
 from gym_agx.utils.utils import goal_distance
+from gym_agx.sims import push_rope_goal
 
+FILE_NAME = "push_rope"
 FILE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_DIRECTORY = os.path.split(FILE_DIRECTORY)[0]
 SCENE_PATH = os.path.join(PACKAGE_DIRECTORY, 'assets', 'push_rope.agx')
@@ -103,6 +109,7 @@ class PushRopeEnv(dlo_env.DloEnv):
         show_goal = kwargs['show_goal'] if 'show_goal' in kwargs else False
         osg_window = kwargs['osg_window'] if 'osg_window' in kwargs else False
         agx_only = kwargs['agx_only'] if 'agx_only' in kwargs else False
+        randomized_goal = kwargs['randomized_goal'] if 'randomized_goal' in kwargs else False
 
         if not os.path.exists(SCENE_PATH):
             raise IOError("File %s does not exist" % SCENE_PATH)
@@ -115,8 +122,54 @@ class PushRopeEnv(dlo_env.DloEnv):
                                           observation_config=observation_config,
                                           camera_config=camera_config,
                                           reward_config=reward_config,
-                                          randomized_goal=False,
+                                          randomized_goal=randomized_goal,
                                           goal_scene_path=GOAL_SCENE_PATH,
                                           show_goal=show_goal,
                                           osg_window=osg_window,
                                           agx_only=agx_only)
+
+    def _sample_goal(self):
+
+        if self.randomized_goal:
+
+            ##################################################
+            # Currently failing "on the fly" goal generation #
+            ##################################################
+
+            # init2 = agx.AutoInit()
+            # random_goal_path = push_rope_goal.get_random_goal(self.args)
+
+            ###########################################################
+            # Random selection of already generated random goal files #
+            ###########################################################
+
+            random_goal_directory = os.path.join(PACKAGE_DIRECTORY, 'assets', FILE_NAME)
+            random_goal_file = random.choice(os.listdir(random_goal_directory))
+            random_goal_path = os.path.join(random_goal_directory, random_goal_file)
+            logger.info(f"Chosen goal file: {random_goal_path}")
+
+            # Independent of the above method, generate a goal assembly scene and read the chosen / generated file
+
+            scene = agxSDK.Assembly()  # Create a new empty Assembly
+            scene.setName("goal_assembly")
+
+            if not agxIO.readFile(random_goal_path, self.sim, scene, agxSDK.Simulation.READ_ALL):
+                raise RuntimeError("Unable to open goal file \'" + random_goal_path + "\'")
+
+        else:
+            scene = agxSDK.Assembly()  # Create a new empty Assembly
+            scene.setName("goal_assembly")
+
+            if not agxIO.readFile(self.goal_scene_path, self.sim, scene, agxSDK.Simulation.READ_ALL):
+                raise RuntimeError("Unable to open goal file \'" + self.goal_scene_path + "\'")
+
+        self.sim.add(scene)
+        goal = self.observation_config.get_observations(self.sim, self.render_to_image, self.end_effectors, cable="DLO",
+                                                        goal_only=True)
+
+        if self.show_goal:
+            self._add_rendering()
+        else:
+            self._reset_sim()
+
+        return goal

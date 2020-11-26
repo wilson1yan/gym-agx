@@ -5,6 +5,7 @@ import agxCollide
 
 import os
 import math
+import time
 import logging
 import numpy as np
 
@@ -66,6 +67,41 @@ def save_goal_simulation(sim, file_name, remove_assemblies=[]):
         print("Unable to save simulation to binary file!")
         return False
     return True
+
+
+def save_random_goal_simulation(sim, file_name, remove_assemblies=[]):
+    """Save AGX simulation object to file.
+    :param agxSDK.Simulation sim: AGX simulation object
+    :param str file_name: name of the file
+    :param list remove_assemblies: string list of assemblies to remove
+    :return: Boolean for success/failure
+    """
+    # Remove assemblies
+    for assembly in remove_assemblies:
+        ass = sim.getAssembly(assembly)
+        sim.remove(ass)
+    # Make all rigid bodies left static, collision free and add goal to their name
+    rbs = sim.getRigidBodies()
+    for rb in rbs:
+        name = rb.getName()
+        rb.setName(name + '_goal')
+        rb.setMotionControl(agx.RigidBody.STATIC)
+        rb_geometries = rb.getGeometries()
+        rb_geometries[0].setEnableCollisions(False)
+    # Add goal to all constraint names which are not empty
+    constraints = sim.getConstraints()
+    for constraint in constraints:
+        name = constraint.getName()
+        if name != '':
+            constraint.setName(name + '_goal')
+    file_directory = os.path.dirname(os.path.abspath(__file__))
+    package_directory = os.path.split(file_directory)[0]
+    time_string = time.strftime("%Y_%m_%d-%H_%M_%S")
+    binary_file = os.path.join(package_directory, 'envs', 'assets', file_name, time_string + "-goal.agx")
+    if not agxIO.writeFile(binary_file, sim):
+        print("Unable to save simulation to binary file!")
+        return False, binary_file
+    return True, binary_file
 
 
 def to_numpy_array(agx_list):
