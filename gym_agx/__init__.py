@@ -84,3 +84,24 @@ register(
     kwargs={'n_substeps': 1},
     max_episode_steps=int(150),
 )
+
+register(
+    id='RopeObstacle-v0',
+    entry_point='gym_agx.envs:RopeObstacleEnv',
+    kwargs={'n_substeps': 1},
+    max_episode_steps=int(200)
+)
+
+register(
+    id='RopeObstacle-v1',
+    entry_point='gym_agx.envs:RopeObstacle2Env',
+    kwargs={'n_substeps': 1},
+    max_episode_steps=int(200)
+)
+
+register(
+    id='RopeObstacle-v2',
+    entry_point='gym_agx.envs:RopeObstacle3Env',
+    kwargs={'n_substeps': 20},
+    max_episode_steps=int(3000)
+)
