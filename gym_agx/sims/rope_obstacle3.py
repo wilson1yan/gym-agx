@@ -30,7 +30,7 @@ N_SUBSTEPS = 20
 GRAVITY = True
 # Rope parameters
 RADIUS = 0.0015  # meters
-LENGTH = 0.05  # meters
+LENGTH = 0.075  # meters
 RESOLUTION = 500  # segments per meter
 ROPE_POISSON_RATIO = 0.01  # no unit
 YOUNG_MODULUS_BEND = 1e3  # 1e5
@@ -44,7 +44,7 @@ ALUMINUM_POISSON_RATIO = 0.35  # no unit
 ALUMINUM_YOUNG_MODULUS = 69e9  # Pascals
 ALUMINUM_YIELD_POINT = 5e7  # Pascals
 # Pusher Parameters
-PUSHER_RADIUS = 0.001
+PUSHER_RADIUS = 0.004
 PUSHER_HEIGHT = 0.01
 PUSHER_ROUGHNESS = 1
 PUSHER_ADHESION = 0
@@ -56,8 +56,8 @@ GROUND_ADHESION_OVERLAP = 0
 # NOTE: At this overlap, no force is applied. At lower overlap, the adhesion force will work, at higher overlap, the
 # (usual) contact forces will be applied
 # Rendering Parameters
-GROUND_LENGTH_X = LENGTH
-GROUND_LENGTH_Y = LENGTH
+GROUND_LENGTH_X = 0.05
+GROUND_LENGTH_Y = 0.05
 GROUND_WIDTH = 0.001  # meters
 CABLE_GRIPPER_RATIO = 2
 SIZE_GRIPPER = CABLE_GRIPPER_RATIO * RADIUS

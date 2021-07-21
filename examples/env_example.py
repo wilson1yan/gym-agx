@@ -31,8 +31,7 @@ observation = env.reset()
 n_segs = len(env.rope.segments)
 idx = random.randint(int(0.1 * n_segs), int(0.9 * n_segs))
 
-for i in range(1000):
-    env.render("osg")
+for i in range(10000):
     action = compute_action(idx)
     observation, reward, done, info = env.step(action)
 
