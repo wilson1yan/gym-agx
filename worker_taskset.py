@@ -30,7 +30,7 @@ def run(i, env_name):
         idx = random.randint(int(0.1 * n_segs), int(0.9 * n_segs))
         done = False
         while not done:
-            obs, reward, done, _ = env.step(policy()))
+            obs, reward, done, _ = env.step(policy())
             frames += 1
             fps = frames / (time.time() - start)
             pbar.set_description(f"FPS: {fps}")
