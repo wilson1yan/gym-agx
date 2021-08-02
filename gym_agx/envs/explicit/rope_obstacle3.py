@@ -45,8 +45,8 @@ class RopeObstacle3Env(agx_env.AgxEnv):
                 name='pusher',
                 controllable=True,
                 observable=True,
-                max_velocity=40 / 100,  # m/s
-                max_acceleration=80 / 100,  # m/s^2
+                max_velocity=3200 / 100,  # m/s
+                max_acceleration=6400 / 100,  # m/s^2
             )
             pusher.add_constraint(name='pusher_joint_base_x',
                                   end_effector_dof=EndEffectorConstraint.Dof.X_TRANSLATION,
@@ -146,15 +146,14 @@ class RopeObstacle3Env(agx_env.AgxEnv):
         force1 = np.random.uniform(-0.025, 0.025, size=2).tolist()
         self.rope.segments[0].getRigidBody().setForce(*force0, 0.)
         self.rope.segments[-1].getRigidBody().setForce(*force1, 0.)
-        for _ in range(20):
+        for _ in range(20 * 15):
             self._step_callback()
 
-        for _ in range(20):
-            for seg in self.rope.segments:
-                seg.getRigidBody().setForce(0., 0., 0.)
-                seg.getRigidBody().setVelocity(0., 0., 0.)
-                seg.getRigidBody().setAngularVelocity(0., 0., 0.)
-            self._step_callback()
+        for seg in self.rope.segments:
+            seg.getRigidBody().setForce(0., 0., 0.)
+            seg.getRigidBody().setVelocity(0., 0., 0.)
+            seg.getRigidBody().setAngularVelocity(0., 0., 0.)
+        self._step_callback()
         self._render_callback()
 
         obs = self._get_observation()
