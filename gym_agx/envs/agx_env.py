@@ -54,6 +54,7 @@ class AgxEnv(gym.Env):
         self.camera_pose = camera_pose
         if not no_graphics:
             self._add_rendering(mode='osg')
+        agx.setNumThreads(8)
 
         # TODO: Is this needed?
         self.fps = int(np.round(1.0 / self.dt))
