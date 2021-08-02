@@ -16,7 +16,7 @@ def compute_action(idx):
     direction /= np.linalg.norm(direction)
     return direction
 
-env = gym.make("RopeObstacle-v2", reward_type="sparse", observation_type="rgb", headless=1)
+env = gym.make("RopeObstacle-v2", reward_type="sparse", observation_type="rgb", headless=0)
 observation = env.reset()
 n_segs = len(env.rope.segments)
 idx = random.randint(int(0.1 * n_segs), int(0.9 * n_segs))
