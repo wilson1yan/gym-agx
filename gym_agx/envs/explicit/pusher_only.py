@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 import numpy as np
-import random
 
 import agx
 import agxSDK
@@ -10,7 +9,7 @@ import agxOSG
 import agxRender
 from agxPythonModules.utils.numpy_utils import create_numpy_array
 
-from gym_agx.sims.rope_obstacle3 import build_simulation, LENGTH
+from gym_agx.sims.pusher_only import build_simulation
 from gym_agx.envs import agx_env
 from gym_agx.utils.agx_utils import to_numpy_array
 from gym_agx.utils.agx_classes import CameraConfig
@@ -23,11 +22,11 @@ SCENE_PATH = os.path.join(PACKAGE_DIRECTORY, 'assets', 'IRRELEVANT')
 logger = logging.getLogger('gym_agx.envs')
 
 
-class RopeObstacle3Env(agx_env.AgxEnv):
+class PusherOnlyEnv(agx_env.AgxEnv):
     """Subclass which inherits from DLO environment."""
 
     def __init__(self, n_substeps=1, reward_type="dense", observation_type="gt", headless=False, 
-                 pushers=None, max_episode_length=40, **kwargs):
+                 pushers=None, max_episode_length=80, **kwargs):
         self.headless = headless
         self.max_episode_length = max_episode_length
         self.timestep = 0
@@ -87,7 +86,7 @@ class RopeObstacle3Env(agx_env.AgxEnv):
             args.extend(["--agxOnly", "1", "--osgWindow", "0"])
         
 
-        super(RopeObstacle3Env, self).__init__(scene_path=SCENE_PATH,
+        super(PusherOnlyEnv, self).__init__(scene_path=SCENE_PATH,
                                               n_substeps=n_substeps,
                                               observation_type=observation_type,
                                               n_actions=2,
@@ -95,24 +94,24 @@ class RopeObstacle3Env(agx_env.AgxEnv):
                                               image_size=(64, 64),
                                               no_graphics=no_graphics,
                                               args=args)
-    
+
     def construct_policy(self):
-        n_segs = len(self.rope.segments)
-        idx = random.randint(int(0.1 * n_segs), int(0.9 * n_segs))
+        goal_pos = np.random.uniform(-1, 1, size=2) * 0.05
 
         def policy():
+            nonlocal goal_pos
+            if self.timestep % 20 == 0:
+                goal_pos = np.random.uniform(-1, 1, size=2) * 0.05 
             pusher_pos = to_numpy_array(self.pusher.getRigidBody('pusher').getPosition())[:2]
-            segment_pos = to_numpy_array(self.rope.segments[idx].getRigidBody().getPosition())[:2]
-            direction = segment_pos - pusher_pos
+            direction = goal_pos - pusher_pos
             direction /= np.linalg.norm(direction)
             return direction
-        
         return policy
-            
+
 
     def _build_simulation(self):
         pusher_init_pos = (np.random.uniform(-0.5, 0.5, size=2) * 0.05).tolist()
-        self.pusher, self.rope = build_simulation(self.sim, pusher_init_pos)
+        self.pusher = build_simulation(self.sim, pusher_init_pos)
         
         self.gravity = self.sim.getUniformGravity()
         self.time_step = self.sim.getTimeStep()
@@ -121,8 +120,6 @@ class RopeObstacle3Env(agx_env.AgxEnv):
 
     def step(self, action):
         logger.info("step")
-
-        rbs = [seg.getRigidBody() for seg in self.rope.segments]
 
         info = self._set_action(action)
         self._step_callback()
@@ -155,20 +152,7 @@ class RopeObstacle3Env(agx_env.AgxEnv):
         self.timestep = 0
         did_reset_sim = False
         while not did_reset_sim:
-            did_reset_sim = self._reset_sim()
- 
-        force0 = np.random.uniform(-0.025, 0.025, size=2).tolist()
-        force1 = np.random.uniform(-0.025, 0.025, size=2).tolist()
-        self.rope.segments[0].getRigidBody().setForce(*force0, 0.)
-        self.rope.segments[-1].getRigidBody().setForce(*force1, 0.)
-        for _ in range(20 * 15):
-            self._step_callback()
-
-        for seg in self.rope.segments:
-            seg.getRigidBody().setForce(0., 0., 0.)
-            seg.getRigidBody().setVelocity(0., 0., 0.)
-            seg.getRigidBody().setAngularVelocity(0., 0., 0.)
-        self._step_callback()
+            did_reset_sim = self._reset_sim() 
         self._render_callback()
 
         obs = self._get_observation()
@@ -205,8 +189,6 @@ class RopeObstacle3Env(agx_env.AgxEnv):
                 agxOSG.setDiffuseColor(node, agxRender.Color(0.0, 0.0, 1.0, 1.0))
             elif "obstacle" in name:
                 agxOSG.setDiffuseColor(node, agxRender.Color(1.0, 0.0, 0.0, 1.0))
-            elif "dlo" in name:
-                agxOSG.setDiffuseColor(node, agxRender.Color(0.0, 1.0, 0.0, 1.0))
             else:  # Base segments
                 agxOSG.setDiffuseColor(node, agxRender.Color.Beige())
                 agxOSG.setAlpha(node, 0.)
@@ -219,59 +201,15 @@ class RopeObstacle3Env(agx_env.AgxEnv):
 
     def _get_observation(self):
         rgb_buffer = None
-        depth_buffer = None
         for buffer in self.render_to_image:
             name = buffer.getName()
             if name == 'rgb_buffer':
                 rgb_buffer = buffer
-            elif name == 'depth_buffer':
-                depth_buffer = buffer
 
-        assert self.observation_type in ("rgb", "depth", "rgb_and_depth", "pos", "pos_and_vel")
+        assert self.observation_type == 'rgb'
 
-        if self.observation_type == "rgb":
-            image_ptr = rgb_buffer.getImageData()
-            image_data = create_numpy_array(image_ptr, (self.image_size[0], self.image_size[1], 3), np.uint8)
-            obs = np.flipud(image_data)
-        elif self.observation_type == "depth":
-            image_ptr = depth_buffer.getImageData()
-            image_data = create_numpy_array(image_ptr, (self.image_size[0], self.image_size[1]), np.float32)
-            obs = np.flipud(image_data)
-        elif self.observation_type == "rgb_and_depth":
-
-            obs = np.zeros((self.image_size[0], self.image_size[1], 4), dtype=np.float32)
-
-            image_ptr = rgb_buffer.getImageData()
-            image_data = create_numpy_array(image_ptr, (self.image_size[0], self.image_size[1], 3), np.uint8)
-            obs[:, :, 0:3] = np.flipud(image_data.astype(np.float32)) / 255
-
-            image_ptr = depth_buffer.getImageData()
-            image_data = create_numpy_array(image_ptr, (self.image_size[0], self.image_size[1]), np.float32)
-            obs[:, :, 3] = np.flipud(image_data)
-        elif self.observation_type == "pos":
-            seg_pos = get_cable_segment_positions(cable=agxCable.Cable.find(self.sim, "DLO")).flatten()
-            gripper = self.sim.getRigidBody("gripper_body")
-            gripper_pos = to_numpy_array(gripper.getPosition())[0:3]
-            cylinder = self.sim.getRigidBody("hollow_cylinder")
-            cylinder_pos = cylinder.getPosition()
-            ea = agx.EulerAngles().set(gripper.getRotation())
-            gripper_rot = ea.y()
-
-            obs = np.concatenate([gripper_pos, [gripper_rot], seg_pos, [cylinder_pos[0], cylinder_pos[1]]])
-
-        elif  self.observation_type == "pos_and_vel":
-            seg_pos, seg_vel = get_cable_segment_positions_and_velocities(cable=agxCable.Cable.find(self.sim, "DLO"))
-            seg_pos = seg_pos.flatten()
-            seg_vel = seg_vel.flatten()
-            gripper = self.sim.getRigidBody("gripper_body")
-            gripper_pos = to_numpy_array(gripper.getPosition())[0:3]
-            gripper_vel = to_numpy_array(gripper.getVelocity())[0:3]
-            gripper_vel_rot = to_numpy_array(gripper.getAngularVelocity())[2]
-            cylinder = self.sim.getRigidBody("hollow_cylinder")
-            cylinder_pos = cylinder.getPosition()
-            ea = agx.EulerAngles().set(gripper.getRotation())
-            gripper_rot = ea.y()
-
-            obs = np.concatenate([gripper_pos, [gripper_rot], gripper_vel, [gripper_vel_rot], seg_pos, seg_vel, [cylinder_pos[0], cylinder_pos[1]]])
+        image_ptr = rgb_buffer.getImageData()
+        image_data = create_numpy_array(image_ptr, (self.image_size[0], self.image_size[1], 3), np.uint8)
+        obs = np.flipud(image_data)
 
         return obs

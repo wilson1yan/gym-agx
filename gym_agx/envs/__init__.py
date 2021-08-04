@@ -5,6 +5,7 @@ from gym_agx.envs.explicit.bend_wire_obstacle_env import BendWireObstacleEnv
 from gym_agx.envs.explicit.push_rope_env import PushRopeEnv
 from gym_agx.envs.explicit.rope_obstacle2 import RopeObstacle2Env
 from gym_agx.envs.explicit.rope_obstacle3 import RopeObstacle3Env
+from gym_agx.envs.explicit.pusher_only import PusherOnlyEnv
 
 # Implicit Shape Control
 from gym_agx.envs.implicit.peg_in_hole_env import PegInHoleEnv
