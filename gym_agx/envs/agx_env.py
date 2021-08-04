@@ -16,8 +16,6 @@ try:
     import agxSDK
     import agxUtil
     import agxRender
-
-    from agxPythonModules.utils.environment import create_or_set_script_context
 except ImportError as e:
     raise error.DependencyNotInstalled("{}. (HINT: you need to install AGX Dynamics, "
                                        "have a valid license and run 'setup_env.bash'.)".format(e))
@@ -49,8 +47,6 @@ class AgxEnv(gym.Env):
         agx.setNumThreads(len(os.sched_getaffinity(0)) // 2)
         self.init = agx.AutoInit()
         self.sim = agxSDK.Simulation()
-
-        create_or_set_script_context(self.sim, None, None)
         self._build_simulation()
 
         # Initialize OSG ExampleApplication
@@ -60,7 +56,6 @@ class AgxEnv(gym.Env):
         self.camera_pose = camera_pose
         if not no_graphics:
             self._add_rendering(mode='osg')
-        agx.setNumThreads(8)
 
         # TODO: Is this needed?
         self.fps = int(np.round(1.0 / self.dt))
@@ -125,7 +120,7 @@ class AgxEnv(gym.Env):
         """Add rendering buffer to application. Needed for image observations
         :param bool depth: Boolean to define if type of rendering is RGB or depth.
         """
-
+        current_affinity = os.sched_getaffinity(0)
         if depth:
             rti = agxOSG.RenderToImage(self.image_size[0], self.image_size[1], agxOSG.RenderTarget.DEPTH_BUFFER,
                                        8, agxOSG.RenderTarget.DEPTH_COMPONENT)
@@ -141,6 +136,7 @@ class AgxEnv(gym.Env):
         self.root = self.app.getRoot()
         self.app.addRenderTarget(rti, self.root)
         self.render_to_image.append(rti)
+        os.sched_setaffinity(0, current_affinity)
 
     def _init_app(self):
         """Initialize OSG Example Application. Needed for rendering graphics.
@@ -151,8 +147,6 @@ class AgxEnv(gym.Env):
         current_affinity = os.sched_getaffinity(0)
         self.app.init(agxIO.ArgumentParser([sys.executable] + self.args))
         os.sched_setaffinity(0, current_affinity)
-        self.app.setAutoStepping(False)
-        create_or_set_script_context(self.sim, self.app, self.app.getSceneRoot())
         self.app.setCameraHome(self.camera_pose['eye'],
                                self.camera_pose['center'],
                                self.camera_pose['up'])  # only after app.init

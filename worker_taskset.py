@@ -26,7 +26,7 @@ def run(i, n, env_name):
         pbar = tqdm(total=1000)
     start = time.time()
     frames = 0
-    for _ in range(10):
+    for _ in range(1000):
         env.reset()
         idx = random.randint(int(0.1 * n_segs), int(0.9 * n_segs))
         done = False
