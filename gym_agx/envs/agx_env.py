@@ -16,6 +16,8 @@ try:
     import agxSDK
     import agxUtil
     import agxRender
+
+    from agxPythonModules.utils.environment import create_or_set_script_context
 except ImportError as e:
     raise error.DependencyNotInstalled("{}. (HINT: you need to install AGX Dynamics, "
                                        "have a valid license and run 'setup_env.bash'.)".format(e))
@@ -47,6 +49,8 @@ class AgxEnv(gym.Env):
         agx.setNumThreads(len(os.sched_getaffinity(0)) // 2)
         self.init = agx.AutoInit()
         self.sim = agxSDK.Simulation()
+
+        create_or_set_script_context(self.sim, None, None)
         self._build_simulation()
 
         # Initialize OSG ExampleApplication
@@ -145,9 +149,10 @@ class AgxEnv(gym.Env):
         """
         logger.info("init app")
         current_affinity = os.sched_getaffinity(0)
-        print('hi')
         self.app.init(agxIO.ArgumentParser([sys.executable] + self.args))
         os.sched_setaffinity(0, current_affinity)
+        self.app.setAutoStepping(False)
+        create_or_set_script_context(self.sim, self.app, self.app.getSceneRoot())
         self.app.setCameraHome(self.camera_pose['eye'],
                                self.camera_pose['center'],
                                self.camera_pose['up'])  # only after app.init
