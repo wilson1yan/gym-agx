@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 import logging
@@ -43,6 +44,7 @@ class AgxEnv(gym.Env):
         # Initialize AGX simulation
         self.gravity = None
         self.time_step = None
+        agx.setNumThreads(len(os.sched_getaffinity(0)) // 2)
         self.init = agx.AutoInit()
         self.sim = agxSDK.Simulation()
         self._build_simulation()
@@ -142,7 +144,9 @@ class AgxEnv(gym.Env):
         :param bool add_background_depth: flag to determine if type of background rendering is depth.
         """
         logger.info("init app")
+        current_affinity = os.sched_getaffinity(0)
         self.app.init(agxIO.ArgumentParser([sys.executable] + self.args))
+        os.sched_setaffinity(0, current_affinity)
         self.app.setCameraHome(self.camera_pose['eye'],
                                self.camera_pose['center'],
                                self.camera_pose['up'])  # only after app.init
