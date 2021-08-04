@@ -11,18 +11,18 @@ def worker(i, n_procs, env_name):
     cpus_per_proc = physical_cores // n_procs
     thread_offset = physical_cores # assumes 2 hyperthreads per core
 
-    cpu_ids = [i, i + thread_offset]
+    cpu_ids = list(range(i * cpus_per_proc, (i + 1) * cpus_per_proc))
+    cpu_ids = sum([[cpu_id, cpu_id + thread_offset] for cpu_id in cpu_ids], [])
     cpu_ids = ','.join(map(str, cpu_ids))
 
     print(f"Running process {i} on GPU {i % 8} with cpus {cpu_ids}")
-    cmd = f'taskset -c {cpu_ids} python worker_taskset.py {i} {env_name}'
+    cmd = f'DISPLAY=:0.{i % 8} taskset -c {cpu_ids} python worker_taskset.py {i} {n_procs} {env_name}'
     os.system(cmd)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--env", type=str, default="RopeObstacle-v2")
-    ap.add_argument("--policy", type=str, default="random", choices=["random", "heuristic", "keyboard"])
     ap.add_argument("--n_procs", type=int, default=1)
     ap.add_argument("-l", action="store_true", default=False)
 

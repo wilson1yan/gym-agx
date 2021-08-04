@@ -16,13 +16,14 @@ def compute_action(env, idx):
     return direction
 
 
-def run(i, env_name):
-    env = gym.make(env_name, reward_type='sparse', observation_type='rgb', headless=0)
+def run(i, n, env_name):
+    env = gym.make(env_name, reward_type='sparse', observation_type='rgb', headless=1)
     n_segs = len(env.rope.segments)
     idx = random.randint(int(0.1 * n_segs), int(0.9 * n_segs))
     policy = lambda: compute_action(env, idx)
 
-    pbar = tqdm(total=10, position=i)
+    if i == 0:
+        pbar = tqdm(total=1000)
     start = time.time()
     frames = 0
     for _ in range(10):
@@ -33,12 +34,15 @@ def run(i, env_name):
             obs, reward, done, _ = env.step(policy())
             frames += 1
             fps = frames / (time.time() - start)
-            pbar.set_description(f"FPS: {fps}")
-        pbar.update(1)
-    pbar.close()
+            if i == 0:
+                pbar.set_description(f"FPS: {fps * n}")
+        if i == 0:
+            pbar.update(1)
+    if i == 0:
+        pbar.close()
 
 
 if __name__ == "__main__":
-    i, env_name = sys.argv[1], sys.argv[2]
-    i = int(i)
-    run(i, env_name)
+    i, n, env_name = sys.argv[1], sys.argv[2], sys.argv[3]
+    i, n = int(i), int(n)
+    run(i, n, env_name)

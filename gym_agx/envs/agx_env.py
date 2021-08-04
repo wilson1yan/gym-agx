@@ -145,6 +145,7 @@ class AgxEnv(gym.Env):
         """
         logger.info("init app")
         current_affinity = os.sched_getaffinity(0)
+        print('hi')
         self.app.init(agxIO.ArgumentParser([sys.executable] + self.args))
         os.sched_setaffinity(0, current_affinity)
         self.app.setCameraHome(self.camera_pose['eye'],
