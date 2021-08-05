@@ -109,6 +109,6 @@ register(
 register(
     id='PusherOnly-v0',
     entry_point='gym_agx.envs:PusherOnlyEnv',
-    kwargs={'n_substeps': 1},
+    kwargs={'n_substeps': 2},
     max_episode_steps=int(3000)
 )
