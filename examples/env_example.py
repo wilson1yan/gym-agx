@@ -8,7 +8,7 @@ from tqdm import tqdm
 from gym_agx import envs
 from gym_agx.utils.agx_utils import to_numpy_array
 
-env = gym.make("PusherOnly-v0", reward_type="sparse", observation_type="rgb", headless=0)
+env = gym.make("RopeObstacle-v2", reward_type="sparse", observation_type="rgb", headless=0)
 observation = env.reset()
 policy = env.construct_policy()
 
