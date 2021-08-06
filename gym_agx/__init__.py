@@ -102,7 +102,7 @@ register(
 register(
     id='RopeObstacle-v2',
     entry_point='gym_agx.envs:RopeObstacle3Env',
-    kwargs={'n_substeps': 1},
+    kwargs={'n_substeps': 2},
     max_episode_steps=int(3000)
 )
 
