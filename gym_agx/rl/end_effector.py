@@ -97,7 +97,7 @@ class EndEffector:
                                                         compliance_control, velocity_index, compliance_index)
         self.constraints.update({name: end_effector_constraint})
 
-    def apply_control(self, sim, action, dt):
+    def apply_control(self, sim, action, dt, rescale=True):
         """Apply control to simulation.
         :param agxSDK.Simulation sim: AGX simulation object.
         :param np.ndarray action: Action from Gym interface.
@@ -112,7 +112,10 @@ class EndEffector:
                     motor = joint.getMotor1D()
                 if constraint.velocity_control:
                     current_velocity, linear = self.get_velocity(sim, constraint.end_effector_dof)
-                    velocity = self.rescale_velocity(action[constraint.velocity_index], current_velocity, dt, linear)
+                    if rescale:
+                        velocity = self.rescale_velocity(action[constraint.velocity_index], current_velocity, dt, linear)
+                    else:
+                        velocity = action[constraint.velocity_index]
                     motor.setSpeed(np.float64(velocity))
                     control_actions.append(velocity)
                 if constraint.compliance_control:
